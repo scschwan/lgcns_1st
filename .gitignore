@@ -1,0 +1,12 @@
+.vs/
+/FinanceTool/bin/Debug/net8.0-windows/python_log
+/FinanceTool/bin/Debug/net8.0-windows/build/okt_keyword_extractor
+/workspace_0119.zip
+/FinanceTool/bin/Debug/net8.0-windows/dist
+/*.zip
+/create_sample
+/result.xlsx
+ *.zip
+/FinanceTool/bin/Debug/net8.0-windows/runtimes
+/FinanceTool/obj
+/sampl1.xlsx
