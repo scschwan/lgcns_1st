@@ -1,5 +1,6 @@
 ﻿using DocumentFormat.OpenXml.Spreadsheet;
 using DocumentFormat.OpenXml.Wordprocessing;
+using FinanceTool;
 using Microsoft.VisualBasic.Devices;
 using System;
 using System.Collections.Generic;
@@ -95,13 +96,14 @@ namespace FinanceTool
 
                         merge_cluster_table.SortCompare += DataHandler.money_SortCompare;
                         merge_check_table.SortCompare += DataHandler.money_SortCompare;
-                        //dataGridView_modified.SortCompare += DataHandler.money_SortCompare;
+                        dataGridView_modified.SortCompare += DataHandler.money_SortCompare;
 
                         dataGridView_modified.CellClick -= dataGridView_keyword_CellClick;
 
 
                         if (dataGridView_modified.Rows.Count > 0)
                         {
+                            dataGridView_modified.DataSource = null;  // 먼저 DataSource를 null로 설정
                             dataGridView_modified.Rows.Clear();
                             dataGridView_modified.Columns.Clear();
                         }
@@ -1606,6 +1608,8 @@ namespace FinanceTool
         public void deleteClusterId(DataTable dataTable, List<int> targetIds)
         {
 
+            Debug.WriteLine($"targetIds : {targetIds[0]}");
+
             // 삭제할 행들을 찾아서 리스트에 담기
             var rowsToDelete = dataTable.AsEnumerable()
                 .Where(row => targetIds.Contains(Convert.ToInt32(row["ID"])))
@@ -2443,6 +2447,13 @@ namespace FinanceTool
             merge_keyword_combo.SelectedIndex = 0;
         }
 
+        // 키워드별 데이터를 저장할 클래스
+        class KeywordData
+        {
+            public int Count { get; set; }
+            public decimal TotalAmount { get; set; }
+        }
+
         //2025.04.25
         //추천 키워드 갱신 함수
         // uc_clustering.cs에 추가할 새 메서드
@@ -2453,30 +2464,39 @@ namespace FinanceTool
 
             try
             {
+                // DataGridView 초기화
+                dataGridView_modified.DataSource = null;
+                dataGridView_modified.Rows.Clear();
+                dataGridView_modified.Columns.Clear();
+
+                if (DataHandler.dragSelections.ContainsKey(dataGridView_modified))
+                {
+                    DataHandler.dragSelections[dataGridView_modified].Clear();
+                }
+
                 // 미병합 클러스터 필터링 (ClusterID == -1)
                 var unboundClusters = mergeClusterDataTable.AsEnumerable()
                     .Where(row => row.Field<int>("ClusterID") == -1)
-                    .CopyToDataTable();
+                    .ToList(); // CopyToDataTable 대신 ToList 사용
 
-                if (unboundClusters.Rows.Count < 1)
+                if (unboundClusters.Count < 1)
                 {
-                    dataGridView_modified.Rows.Clear();
-                    dataGridView_modified.Columns.Clear();
-                    return;
+                    return; // 데이터가 없으면 종료
                 }
 
-                // 필터링된 데이터에서 필요한 열만 선택
-                DataTable modifiedTable = new DataTable();
-                modifiedTable.Columns.Add("키워드", typeof(string));
-                modifiedTable.Columns.Add("Count", typeof(int));
-                modifiedTable.Columns.Add("합산금액", typeof(string));
+                // 키워드를 그룹화하여 집계할 Dictionary 생성
+                Dictionary<string, KeywordData> keywordDict = new Dictionary<string, KeywordData>();
 
-                // 데이터 복사
-                foreach (DataRow row in unboundClusters.Rows)
+       
+       
+
+                // 모든 키워드 추출 및 집계
+                foreach (var row in unboundClusters)
                 {
-                    // '키워드목록' 열에서 키워드를 분리하여 처리
                     string keywordList = row["키워드목록"].ToString();
-                    string[] keywords = keywordList.Split(',');
+                string[] keywords = keywordList.Split(',');
+                int rowCount = Convert.ToInt32(row["Count"]);
+                decimal rowAmount = Convert.ToDecimal(row["합산금액"]);
 
                     foreach (string keyword in keywords)
                     {
@@ -2484,45 +2504,41 @@ namespace FinanceTool
                         if (string.IsNullOrEmpty(trimmedKeyword))
                             continue;
 
-                        // 이미 존재하는 키워드인지 확인
-                        bool exists = false;
-                        foreach (DataRow existingRow in modifiedTable.Rows)
+                        if (keywordDict.ContainsKey(trimmedKeyword))
                         {
-                            if (existingRow["키워드"].ToString() == trimmedKeyword)
-                            {
-                                // 이미 존재하면 Count와 합산금액 누적
-                                existingRow["Count"] = Convert.ToInt32(existingRow["Count"]) + Convert.ToInt32(row["Count"]);
-                                existingRow["합산금액"] = Convert.ToDecimal(existingRow["합산금액"]) + Convert.ToDecimal(row["합산금액"]);
-                                exists = true;
-                                break;
-                            }
+                            // 기존 키워드에 값 추가
+                            keywordDict[trimmedKeyword].Count += rowCount;
+                            keywordDict[trimmedKeyword].TotalAmount += rowAmount;
                         }
-
-                        // 존재하지 않으면 새 행 추가
-                        if (!exists)
+                        else
                         {
-                            DataRow newRow = modifiedTable.NewRow();
-                            newRow["키워드"] = trimmedKeyword;
-                            newRow["Count"] = row["Count"];
-                            newRow["합산금액"] = row["합산금액"];
-                            modifiedTable.Rows.Add(newRow);
+                            // 새 키워드 추가
+                            keywordDict[trimmedKeyword] = new KeywordData
+                            {
+                                Count = rowCount,
+                                TotalAmount = rowAmount
+                                };
                         }
                     }
                 }
 
-                //합산금액 표기 변경
-                foreach (DataRow row in modifiedTable.Rows)
+                // 정렬을 위해 리스트로 변환 (Count 기준 내림차순)
+                var sortedKeywords = keywordDict.OrderByDescending(kv => kv.Value.Count).ToList();
+
+                // DataGridView 컬럼 설정
+                dataGridView_modified.Columns.Add("키워드", "키워드");
+                dataGridView_modified.Columns.Add("Count", "Count");
+                dataGridView_modified.Columns.Add("합산금액", "합산금액");
+
+                // 데이터 행 추가
+                foreach (var keywordEntry in sortedKeywords)
                 {
-                    row["합산금액"] = FormatToKoreanUnit(Convert.ToDecimal(row["합산금액"]));
+                    int rowIndex = dataGridView_modified.Rows.Add();
+                    dataGridView_modified.Rows[rowIndex].Cells["키워드"].Value = keywordEntry.Key;
+                    dataGridView_modified.Rows[rowIndex].Cells["Count"].Value = keywordEntry.Value.Count;
+                    dataGridView_modified.Rows[rowIndex].Cells["합산금액"].Value =
+                        FormatToKoreanUnit(keywordEntry.Value.TotalAmount);
                 }
-
-                // Count 기준으로 내림차순 정렬
-                DataView dv = modifiedTable.DefaultView;
-                dv.Sort = "Count DESC";
-                DataTable sortedTable = dv.ToTable();
-
-                // dataGridView에 데이터 표시
-                dataGridView_modified.DataSource = sortedTable;
 
                 // 열 형식 지정
                 if (dataGridView_modified.Columns["Count"] != null)
@@ -2531,29 +2547,26 @@ namespace FinanceTool
                     dataGridView_modified.Columns["Count"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
                 }
 
-                /*
-                if (dataGridView_modified.Columns["합산금액"] != null)
-                {
-                    dataGridView_modified.Columns["합산금액"].DefaultCellStyle.Format = "N0";
-                    dataGridView_modified.Columns["합산금액"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
-                }
-                */
+                // DataGridView 속성 설정
+                dataGridView_modified.AllowUserToAddRows = false;
+                dataGridView_modified.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+                dataGridView_modified.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+                dataGridView_modified.ReadOnly = true;
+                dataGridView_modified.Font = new System.Drawing.Font("맑은 고딕", 14.25F);
 
-                //dataGridView_modified.SortCompare -= DataHandler.money_SortCompare;
-                //dataGridView_modified.SortCompare += DataHandler.money_SortCompare;
+                // 정렬 이벤트 핸들러 설정
+                dataGridView_modified.SortCompare -= DataHandler.money_SortCompare;
+                dataGridView_modified.SortCompare += DataHandler.money_SortCompare;
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"UpdateModifiedDataGridView 오류: {ex.Message}");
-                // 데이터가 없는 경우 빈 테이블 생성
-                if (ex.Message.Contains("CopyToDataTable"))
-                {
-                    DataTable emptyTable = new DataTable();
-                    emptyTable.Columns.Add("키워드", typeof(string));
-                    emptyTable.Columns.Add("Count", typeof(int));
-                    emptyTable.Columns.Add("합산금액", typeof(string));
-                    dataGridView_modified.DataSource = emptyTable;
-                }
+
+                // 데이터가 없는 경우 빈 그리드 생성
+                dataGridView_modified.Columns.Clear();
+                dataGridView_modified.Columns.Add("키워드", "키워드");
+                dataGridView_modified.Columns.Add("Count", "Count");
+                dataGridView_modified.Columns.Add("합산금액", "합산금액");
             }
             finally
             {
@@ -2569,19 +2582,16 @@ namespace FinanceTool
 
             foreach (DataGridViewRow row in merge_check_table.Rows)
             {
-                // 첫 번째 열이 체크박스 열이라고 가정합니다
+                // 체크된 항목의 ClusterID 수집
                 DataGridViewCheckBoxCell checkCell = row.Cells[0] as DataGridViewCheckBoxCell;
-
-                if (checkCell != null && checkCell.Value != null &&
-                    Convert.ToBoolean(checkCell.Value) == true)
+                if (checkCell != null && checkCell.Value != null && Convert.ToBoolean(checkCell.Value))
                 {
-                    // ClusterID 추출
                     int clusterId = Convert.ToInt32(row.Cells["ClusterID"].Value);
                     checkedClusterIds.Add(clusterId);
                 }
             }
 
-            // 2. 체크된 항목이 1개 이하인 경우 메시지 표시 후 종료
+            // 2. 체크된 항목이 1개 이하인 경우 종료
             if (checkedClusterIds.Count < 2)
             {
                 MessageBox.Show("클러스터 간 병합 수행 시\n2개 이상의 병합된 클러스터를 선택해주세요.",
@@ -2591,26 +2601,135 @@ namespace FinanceTool
 
             try
             {
-                // 3. 첫 번째 체크된 항목의 ClusterID를 기준으로 설정
-                int targetClusterId = checkedClusterIds[0];
+                // 3. 병합할 정보 수집 및 새 클러스터 생성
+                int maxId = DataHandler.finalClusteringData.AsEnumerable()
+                    .Max(row => Convert.ToInt32(row["ID"]));
+                int newClusterId = maxId + 1;
 
-                // 4. DataHandler.finalClusteringData의 모든 행을 순회하면서
-                // 선택된 ClusterID를 가진 행들의 ClusterID를 targetClusterId로 변경
-                foreach (DataRow row in DataHandler.finalClusteringData.Rows)
+                string combinedKeywords = "";
+                int totalCount = 0;
+                decimal totalAmount = 0;
+                string combinedClusterName = "";
+                string combinedDataIndex = "";
+
+                // 병합할 클러스터 정보 수집 및 하위 항목 ID 수집
+                List<int> allSubItemIds = new List<int>(); // 모든 하위 항목의 ID
+
+                foreach (int clusterId in checkedClusterIds)
                 {
-                    int currentClusterId = Convert.ToInt32(row["ClusterID"]);
+                    // 클러스터 대표 행 찾기
+                    DataRow clusterRow = DataHandler.finalClusteringData.AsEnumerable()
+                        .FirstOrDefault(row => Convert.ToInt32(row["ID"]) == clusterId);
 
-                    // 선택된 ClusterID 목록에 포함되어 있고, 기준 ClusterID가 아닌 경우 변경
-                    if (checkedClusterIds.Contains(currentClusterId) && currentClusterId != targetClusterId)
+                    if (clusterRow != null)
                     {
-                        row["ClusterID"] = targetClusterId;
+                        // 클러스터명 병합
+                        if (!string.IsNullOrEmpty(combinedClusterName))
+                            combinedClusterName += "_";
+                        combinedClusterName += clusterRow["클러스터명"].ToString();
+
+                        // 키워드 병합
+                        if (!string.IsNullOrEmpty(combinedKeywords) && !string.IsNullOrEmpty(clusterRow["키워드목록"].ToString()))
+                        {
+                            // 중복 제거하여 키워드 병합
+                            HashSet<string> keywordSet = new HashSet<string>(
+                                combinedKeywords.Split(',').Select(k => k.Trim()));
+
+                            foreach (string keyword in clusterRow["키워드목록"].ToString().Split(',').Select(k => k.Trim()))
+                            {
+                                keywordSet.Add(keyword);
+                            }
+
+                            combinedKeywords = string.Join(",", keywordSet);
+                        }
+                        else if (!string.IsNullOrEmpty(clusterRow["키워드목록"].ToString()))
+                        {
+                            combinedKeywords = clusterRow["키워드목록"].ToString();
+                        }
+
+                        // dataIndex 병합
+                        if (!string.IsNullOrEmpty(combinedDataIndex) && !string.IsNullOrEmpty(clusterRow["dataIndex"].ToString()))
+                        {
+                            combinedDataIndex += "," + clusterRow["dataIndex"].ToString();
+                        }
+                        else if (!string.IsNullOrEmpty(clusterRow["dataIndex"].ToString()))
+                        {
+                            combinedDataIndex = clusterRow["dataIndex"].ToString();
+                        }
+
+                        // 개수와 금액 합산
+                        totalCount += Convert.ToInt32(clusterRow["Count"]);
+                        totalAmount += Convert.ToDecimal(clusterRow["합산금액"]);
+                    }
+
+                    // 해당 클러스터에 속한 모든 항목 수집
+                    foreach (DataRow row in DataHandler.finalClusteringData.Rows)
+                    {
+                        if (row["ClusterID"] != DBNull.Value && Convert.ToInt32(row["ClusterID"]) == clusterId)
+                        {
+                            allSubItemIds.Add(Convert.ToInt32(row["ID"]));
+                        }
                     }
                 }
 
-                // 5. 병합 후 데이터 리스트 갱신
-                create_check_keyword_list();
+                // 클러스터명 길이 제한
+                if (combinedClusterName.Length > 20)
+                {
+                    combinedClusterName = combinedClusterName.Substring(0, 17) + "...";
+                }
 
-                // 6. dataGridView_modified 업데이트 (이전에 구현한 함수 사용)
+                // 4. 새 클러스터 행 생성
+                DataRow newRow = DataHandler.finalClusteringData.NewRow();
+                newRow["ID"] = newClusterId;
+                newRow["ClusterID"] = newClusterId;
+                newRow["클러스터명"] = combinedClusterName;
+                newRow["키워드목록"] = combinedKeywords;
+                newRow["Count"] = totalCount;
+                newRow["합산금액"] = totalAmount;
+                newRow["dataIndex"] = combinedDataIndex;
+
+                DataHandler.finalClusteringData.Rows.Add(newRow);
+
+                // 5. 기존 클러스터 대표 행 삭제 (중요: 먼저 하위 항목의 ClusterID를 변경한 후 삭제해야 함)
+                // 모든 하위 항목의 ClusterID 변경
+                foreach (DataRow row in DataHandler.finalClusteringData.Rows)
+                {
+                    int rowId = Convert.ToInt32(row["ID"]);
+                    if (row["ClusterID"] != DBNull.Value)
+                    {
+                        int rowClusterId = Convert.ToInt32(row["ClusterID"]);
+                        if (checkedClusterIds.Contains(rowClusterId))
+                        {
+                            row["ClusterID"] = newClusterId;
+                        }
+                    }
+                }
+
+                // 기존 클러스터 대표 행 삭제
+                List<DataRow> rowsToDelete = new List<DataRow>();
+                foreach (int clusterId in checkedClusterIds)
+                {
+                    DataRow clusterRow = DataHandler.finalClusteringData.AsEnumerable()
+                        .FirstOrDefault(row => Convert.ToInt32(row["ID"]) == clusterId);
+
+                    if (clusterRow != null)
+                    {
+                        rowsToDelete.Add(clusterRow);
+                    }
+                }
+
+                foreach (DataRow row in rowsToDelete)
+                {
+                    DataHandler.finalClusteringData.Rows.Remove(row);
+                }
+
+                // 6. 변경사항 적용
+                DataHandler.finalClusteringData.AcceptChanges();
+                mergeClusterDataTable = EnrichWithRawTableData(DataHandler.finalClusteringData);
+
+                // 7. 데이터 리스트 갱신
+                set_keyword_combo_list();
+                create_check_keyword_list();
                 UpdateModifiedDataGridView();
 
                 MessageBox.Show("선택한 클러스터들이 성공적으로 병합되었습니다.",
