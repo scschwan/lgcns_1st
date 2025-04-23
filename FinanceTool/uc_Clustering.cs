@@ -55,6 +55,7 @@ namespace FinanceTool
 
             create_merge_keyword_list(true);
 
+
             //최초 수행시만 별도 수행
             supplier_keyword_list = ExtractUniqueSupplierKeywords(mergeClusterDataTable, 0);
 
@@ -90,9 +91,11 @@ namespace FinanceTool
                         //sorting 기준 변환
                         merge_cluster_table.SortCompare -= DataHandler.money_SortCompare;
                         merge_check_table.SortCompare -= DataHandler.money_SortCompare;
+                        dataGridView_modified.SortCompare -= DataHandler.money_SortCompare;
 
                         merge_cluster_table.SortCompare += DataHandler.money_SortCompare;
                         merge_check_table.SortCompare += DataHandler.money_SortCompare;
+                        //dataGridView_modified.SortCompare += DataHandler.money_SortCompare;
 
                         dataGridView_modified.CellClick -= dataGridView_keyword_CellClick;
 
@@ -103,7 +106,7 @@ namespace FinanceTool
                             dataGridView_modified.Columns.Clear();
                         }
 
-
+                        /*
                         // 원본 DataTable의 컬럼들 추가
                         foreach (DataColumn col in DataHandler.recomandKeywordTable.Columns)
                         {
@@ -124,6 +127,10 @@ namespace FinanceTool
 
 
                         }
+                        */
+
+                        // 초기 데이터 로드 후 업데이트
+                        UpdateModifiedDataGridView();
 
                         // DataGridView 속성 설정
                         dataGridView_modified.AllowUserToAddRows = false;
@@ -147,6 +154,8 @@ namespace FinanceTool
                         Debug.WriteLine("LoadSeparatorsAndRemovers");
 
                         LoadSeparatorsAndRemovers();
+
+
                     });
                 }
             });
@@ -600,7 +609,7 @@ namespace FinanceTool
                     //포함 검색
                     else
                     {
-                        
+
                         MathcingPairs = DataHandler.FindMachKeyword(searchList, target_keyword);
                     }
 
@@ -917,7 +926,6 @@ namespace FinanceTool
             return uniqueKeywords.OrderBy(k => k).ToList();
         }
 
-        // 공급업체 키워드 추출 함수
         // 공급업체 키워드 추출 함수
         public List<string> ExtractUniqueSupplierKeywords(DataTable dataTable, int checkFlag)
         {
@@ -1259,6 +1267,9 @@ namespace FinanceTool
                 }
             }
             dgv.Font = new System.Drawing.Font("맑은 고딕", 9F);
+
+            dgv.SortCompare -= DataHandler.money_SortCompare;
+            dgv.SortCompare += DataHandler.money_SortCompare;
         }
 
         public void CreateCheckDataGridView(DataGridView dgv, DataTable dt, List<string> filterWords)
@@ -1693,6 +1704,10 @@ namespace FinanceTool
                                        MessageBoxButtons.OK,
                                        MessageBoxIcon.Information);
             }
+
+            // 병합 작업 후 업데이트
+            UpdateModifiedDataGridView();
+
             /*
             List<int> mergeIDlList = GetCheckedRowsData(merge_cluster_table);
 
@@ -1750,6 +1765,9 @@ namespace FinanceTool
             create_merge_keyword_list();
             create_check_keyword_list();
             //DataHandler.SetupDataGridView(dataGridView_3rd, DataHandler.finalClusteringData);
+
+            // 병합 작업 후 업데이트
+            UpdateModifiedDataGridView();
 
             MessageBox.Show("클러스터 병합 해제가 완료되었습니다.", "Info",
                                    MessageBoxButtons.OK,
@@ -2069,6 +2087,10 @@ namespace FinanceTool
                         merge_check_table.DataSource = null;
 
                         create_check_keyword_list();
+
+                        //2025.04.23
+                        //추천 키워드 리스트 재조회
+                        UpdateModifiedDataGridView();
                     });
                 }
             });
@@ -2166,6 +2188,9 @@ namespace FinanceTool
                                        MessageBoxButtons.OK,
                                        MessageBoxIcon.Information);
             }
+
+            // 병합 작업 후 업데이트
+            UpdateModifiedDataGridView();
             /*
             int mergeAddClusterID = mergeClusterIDlList[0];
             int checkIndex = GetCheckedRowsIndex(merge_check_table);
@@ -2412,10 +2437,190 @@ namespace FinanceTool
                         merge_keyword_combo.Items.Add(supplier);
                     }
                 }
-                
+
             }
 
             merge_keyword_combo.SelectedIndex = 0;
+        }
+
+        //2025.04.25
+        //추천 키워드 갱신 함수
+        // uc_clustering.cs에 추가할 새 메서드
+        private void UpdateModifiedDataGridView()
+        {
+            // UI 업데이트 시작 전에 SuspendLayout 호출
+            dataGridView_modified.SuspendLayout();
+
+            try
+            {
+                // 미병합 클러스터 필터링 (ClusterID == -1)
+                var unboundClusters = mergeClusterDataTable.AsEnumerable()
+                    .Where(row => row.Field<int>("ClusterID") == -1)
+                    .CopyToDataTable();
+
+                if (unboundClusters.Rows.Count < 1)
+                {
+                    dataGridView_modified.Rows.Clear();
+                    dataGridView_modified.Columns.Clear();
+                    return;
+                }
+
+                // 필터링된 데이터에서 필요한 열만 선택
+                DataTable modifiedTable = new DataTable();
+                modifiedTable.Columns.Add("키워드", typeof(string));
+                modifiedTable.Columns.Add("Count", typeof(int));
+                modifiedTable.Columns.Add("합산금액", typeof(string));
+
+                // 데이터 복사
+                foreach (DataRow row in unboundClusters.Rows)
+                {
+                    // '키워드목록' 열에서 키워드를 분리하여 처리
+                    string keywordList = row["키워드목록"].ToString();
+                    string[] keywords = keywordList.Split(',');
+
+                    foreach (string keyword in keywords)
+                    {
+                        string trimmedKeyword = keyword.Trim();
+                        if (string.IsNullOrEmpty(trimmedKeyword))
+                            continue;
+
+                        // 이미 존재하는 키워드인지 확인
+                        bool exists = false;
+                        foreach (DataRow existingRow in modifiedTable.Rows)
+                        {
+                            if (existingRow["키워드"].ToString() == trimmedKeyword)
+                            {
+                                // 이미 존재하면 Count와 합산금액 누적
+                                existingRow["Count"] = Convert.ToInt32(existingRow["Count"]) + Convert.ToInt32(row["Count"]);
+                                existingRow["합산금액"] = Convert.ToDecimal(existingRow["합산금액"]) + Convert.ToDecimal(row["합산금액"]);
+                                exists = true;
+                                break;
+                            }
+                        }
+
+                        // 존재하지 않으면 새 행 추가
+                        if (!exists)
+                        {
+                            DataRow newRow = modifiedTable.NewRow();
+                            newRow["키워드"] = trimmedKeyword;
+                            newRow["Count"] = row["Count"];
+                            newRow["합산금액"] = row["합산금액"];
+                            modifiedTable.Rows.Add(newRow);
+                        }
+                    }
+                }
+
+                //합산금액 표기 변경
+                foreach (DataRow row in modifiedTable.Rows)
+                {
+                    row["합산금액"] = FormatToKoreanUnit(Convert.ToDecimal(row["합산금액"]));
+                }
+
+                // Count 기준으로 내림차순 정렬
+                DataView dv = modifiedTable.DefaultView;
+                dv.Sort = "Count DESC";
+                DataTable sortedTable = dv.ToTable();
+
+                // dataGridView에 데이터 표시
+                dataGridView_modified.DataSource = sortedTable;
+
+                // 열 형식 지정
+                if (dataGridView_modified.Columns["Count"] != null)
+                {
+                    dataGridView_modified.Columns["Count"].DefaultCellStyle.Format = "N0";
+                    dataGridView_modified.Columns["Count"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+                }
+
+                /*
+                if (dataGridView_modified.Columns["합산금액"] != null)
+                {
+                    dataGridView_modified.Columns["합산금액"].DefaultCellStyle.Format = "N0";
+                    dataGridView_modified.Columns["합산금액"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+                }
+                */
+
+                //dataGridView_modified.SortCompare -= DataHandler.money_SortCompare;
+                //dataGridView_modified.SortCompare += DataHandler.money_SortCompare;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"UpdateModifiedDataGridView 오류: {ex.Message}");
+                // 데이터가 없는 경우 빈 테이블 생성
+                if (ex.Message.Contains("CopyToDataTable"))
+                {
+                    DataTable emptyTable = new DataTable();
+                    emptyTable.Columns.Add("키워드", typeof(string));
+                    emptyTable.Columns.Add("Count", typeof(int));
+                    emptyTable.Columns.Add("합산금액", typeof(string));
+                    dataGridView_modified.DataSource = emptyTable;
+                }
+            }
+            finally
+            {
+                // UI 업데이트 재개
+                dataGridView_modified.ResumeLayout();
+            }
+        }
+
+        private void union_cluster_btn_Click(object sender, EventArgs e)
+        {
+            // 1. 체크된 항목들 찾기
+            List<int> checkedClusterIds = new List<int>();
+
+            foreach (DataGridViewRow row in merge_check_table.Rows)
+            {
+                // 첫 번째 열이 체크박스 열이라고 가정합니다
+                DataGridViewCheckBoxCell checkCell = row.Cells[0] as DataGridViewCheckBoxCell;
+
+                if (checkCell != null && checkCell.Value != null &&
+                    Convert.ToBoolean(checkCell.Value) == true)
+                {
+                    // ClusterID 추출
+                    int clusterId = Convert.ToInt32(row.Cells["ClusterID"].Value);
+                    checkedClusterIds.Add(clusterId);
+                }
+            }
+
+            // 2. 체크된 항목이 1개 이하인 경우 메시지 표시 후 종료
+            if (checkedClusterIds.Count < 2)
+            {
+                MessageBox.Show("클러스터 간 병합 수행 시\n2개 이상의 병합된 클러스터를 선택해주세요.",
+                    "알림", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                // 3. 첫 번째 체크된 항목의 ClusterID를 기준으로 설정
+                int targetClusterId = checkedClusterIds[0];
+
+                // 4. DataHandler.finalClusteringData의 모든 행을 순회하면서
+                // 선택된 ClusterID를 가진 행들의 ClusterID를 targetClusterId로 변경
+                foreach (DataRow row in DataHandler.finalClusteringData.Rows)
+                {
+                    int currentClusterId = Convert.ToInt32(row["ClusterID"]);
+
+                    // 선택된 ClusterID 목록에 포함되어 있고, 기준 ClusterID가 아닌 경우 변경
+                    if (checkedClusterIds.Contains(currentClusterId) && currentClusterId != targetClusterId)
+                    {
+                        row["ClusterID"] = targetClusterId;
+                    }
+                }
+
+                // 5. 병합 후 데이터 리스트 갱신
+                create_check_keyword_list();
+
+                // 6. dataGridView_modified 업데이트 (이전에 구현한 함수 사용)
+                UpdateModifiedDataGridView();
+
+                MessageBox.Show("선택한 클러스터들이 성공적으로 병합되었습니다.",
+                    "병합 완료", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"클러스터 병합 중 오류가 발생했습니다: {ex.Message}",
+                    "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }

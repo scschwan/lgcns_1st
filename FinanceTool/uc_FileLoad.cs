@@ -136,7 +136,7 @@ namespace FinanceTool
                 if (dataExists)
                 {
                     DialogResult result = MessageBox.Show(
-                        "파일을 새로 업로드 할 경우 기존 업로드 내역 및 작업 내용이 모두 초기화 됩니다.\n" +
+                        "파일을 새로 업로드 할 경우 \n기존 업로드 내역 및 작업 내용이 모두 초기화 됩니다.\n" +
                         "파일을 계속 업로드 하시겠습니까?",
                         "경고",
                         MessageBoxButtons.OKCancel,

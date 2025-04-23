@@ -28,11 +28,11 @@
         /// </summary>
         private void InitializeComponent()
         {
-            DataGridViewCellStyle dataGridViewCellStyle11 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle12 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle13 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle14 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle15 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle6 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle7 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle8 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle9 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle10 = new DataGridViewCellStyle();
             complete_btn = new Button();
             groupbox2 = new GroupBox();
             label7 = new Label();
@@ -44,8 +44,9 @@
             check_search_button = new Button();
             merge_check_table = new DataGridView();
             groupBox1 = new GroupBox();
-            keyword_radio2 = new RadioButton();
+            groupBox5 = new GroupBox();
             keyword_radio1 = new RadioButton();
+            keyword_radio2 = new RadioButton();
             uncluster_count_money = new Label();
             label4 = new Label();
             label3 = new Label();
@@ -79,10 +80,11 @@
             lv1_del_btn = new Button();
             lv1_add_btn = new Button();
             dataGridView_modified = new DataGridView();
-            groupBox5 = new GroupBox();
+            union_cluster_btn = new Button();
             groupbox2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)merge_check_table).BeginInit();
             groupBox1.SuspendLayout();
+            groupBox5.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)merge_cluster_table).BeginInit();
             groupBox3.SuspendLayout();
             groupBox4.SuspendLayout();
@@ -90,7 +92,6 @@
             gb_separator.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dataGridView_lv1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)dataGridView_modified).BeginInit();
-            groupBox5.SuspendLayout();
             SuspendLayout();
             // 
             // complete_btn
@@ -107,6 +108,7 @@
             // 
             // groupbox2
             // 
+            groupbox2.Controls.Add(union_cluster_btn);
             groupbox2.Controls.Add(label7);
             groupbox2.Controls.Add(complete_btn);
             groupbox2.Controls.Add(check_search_radio2);
@@ -210,35 +212,35 @@
             // 
             merge_check_table.AllowUserToAddRows = false;
             merge_check_table.AllowUserToDeleteRows = false;
-            dataGridViewCellStyle11.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle11.BackColor = SystemColors.Control;
-            dataGridViewCellStyle11.Font = new Font("맑은 고딕", 14.25F, FontStyle.Regular, GraphicsUnit.Point, 129);
-            dataGridViewCellStyle11.ForeColor = SystemColors.WindowText;
-            dataGridViewCellStyle11.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle11.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle11.WrapMode = DataGridViewTriState.True;
-            merge_check_table.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle11;
+            dataGridViewCellStyle6.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle6.BackColor = SystemColors.Control;
+            dataGridViewCellStyle6.Font = new Font("맑은 고딕", 14.25F, FontStyle.Regular, GraphicsUnit.Point, 129);
+            dataGridViewCellStyle6.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle6.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle6.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle6.WrapMode = DataGridViewTriState.True;
+            merge_check_table.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle6;
             merge_check_table.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridViewCellStyle12.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle12.BackColor = SystemColors.Window;
-            dataGridViewCellStyle12.Font = new Font("맑은 고딕", 14.25F, FontStyle.Regular, GraphicsUnit.Point, 129);
-            dataGridViewCellStyle12.ForeColor = SystemColors.ControlText;
-            dataGridViewCellStyle12.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle12.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle12.WrapMode = DataGridViewTriState.False;
-            merge_check_table.DefaultCellStyle = dataGridViewCellStyle12;
+            dataGridViewCellStyle7.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle7.BackColor = SystemColors.Window;
+            dataGridViewCellStyle7.Font = new Font("맑은 고딕", 14.25F, FontStyle.Regular, GraphicsUnit.Point, 129);
+            dataGridViewCellStyle7.ForeColor = SystemColors.ControlText;
+            dataGridViewCellStyle7.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle7.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle7.WrapMode = DataGridViewTriState.False;
+            merge_check_table.DefaultCellStyle = dataGridViewCellStyle7;
             merge_check_table.EnableHeadersVisualStyles = false;
             merge_check_table.Location = new Point(6, 140);
             merge_check_table.Name = "merge_check_table";
             merge_check_table.ReadOnly = true;
-            dataGridViewCellStyle13.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle13.BackColor = SystemColors.Control;
-            dataGridViewCellStyle13.Font = new Font("돋움체", 14.25F, FontStyle.Regular, GraphicsUnit.Point, 129);
-            dataGridViewCellStyle13.ForeColor = SystemColors.WindowText;
-            dataGridViewCellStyle13.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle13.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle13.WrapMode = DataGridViewTriState.True;
-            merge_check_table.RowHeadersDefaultCellStyle = dataGridViewCellStyle13;
+            dataGridViewCellStyle8.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle8.BackColor = SystemColors.Control;
+            dataGridViewCellStyle8.Font = new Font("돋움체", 14.25F, FontStyle.Regular, GraphicsUnit.Point, 129);
+            dataGridViewCellStyle8.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle8.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle8.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle8.WrapMode = DataGridViewTriState.True;
+            merge_check_table.RowHeadersDefaultCellStyle = dataGridViewCellStyle8;
             merge_check_table.Size = new Size(621, 275);
             merge_check_table.TabIndex = 23;
             // 
@@ -273,16 +275,15 @@
             groupBox1.TabStop = false;
             groupBox1.Text = "Clustering 병합";
             // 
-            // keyword_radio2
+            // groupBox5
             // 
-            keyword_radio2.AutoSize = true;
-            keyword_radio2.Font = new Font("맑은 고딕", 14.25F);
-            keyword_radio2.Location = new Point(144, 4);
-            keyword_radio2.Name = "keyword_radio2";
-            keyword_radio2.Size = new Size(151, 29);
-            keyword_radio2.TabIndex = 53;
-            keyword_radio2.Text = "공급업체 검색";
-            keyword_radio2.UseVisualStyleBackColor = true;
+            groupBox5.Controls.Add(keyword_radio1);
+            groupBox5.Controls.Add(keyword_radio2);
+            groupBox5.Location = new Point(880, 23);
+            groupBox5.Name = "groupBox5";
+            groupBox5.Size = new Size(300, 33);
+            groupBox5.TabIndex = 54;
+            groupBox5.TabStop = false;
             // 
             // keyword_radio1
             // 
@@ -297,6 +298,17 @@
             keyword_radio1.Text = "키워드 검색";
             keyword_radio1.UseVisualStyleBackColor = true;
             keyword_radio1.CheckedChanged += keyword_radio1_CheckedChanged;
+            // 
+            // keyword_radio2
+            // 
+            keyword_radio2.AutoSize = true;
+            keyword_radio2.Font = new Font("맑은 고딕", 14.25F);
+            keyword_radio2.Location = new Point(144, 4);
+            keyword_radio2.Name = "keyword_radio2";
+            keyword_radio2.Size = new Size(151, 29);
+            keyword_radio2.TabIndex = 53;
+            keyword_radio2.Text = "공급업체 검색";
+            keyword_radio2.UseVisualStyleBackColor = true;
             // 
             // uncluster_count_money
             // 
@@ -564,14 +576,14 @@
             dataGridView_recoman_keyword.AllowUserToAddRows = false;
             dataGridView_recoman_keyword.AllowUserToDeleteRows = false;
             dataGridView_recoman_keyword.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridViewCellStyle14.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle14.BackColor = SystemColors.Window;
-            dataGridViewCellStyle14.Font = new Font("맑은 고딕", 14.25F, FontStyle.Regular, GraphicsUnit.Point, 129);
-            dataGridViewCellStyle14.ForeColor = SystemColors.ControlText;
-            dataGridViewCellStyle14.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle14.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle14.WrapMode = DataGridViewTriState.False;
-            dataGridView_recoman_keyword.DefaultCellStyle = dataGridViewCellStyle14;
+            dataGridViewCellStyle9.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle9.BackColor = SystemColors.Window;
+            dataGridViewCellStyle9.Font = new Font("맑은 고딕", 14.25F, FontStyle.Regular, GraphicsUnit.Point, 129);
+            dataGridViewCellStyle9.ForeColor = SystemColors.ControlText;
+            dataGridViewCellStyle9.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle9.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle9.WrapMode = DataGridViewTriState.False;
+            dataGridView_recoman_keyword.DefaultCellStyle = dataGridViewCellStyle9;
             dataGridView_recoman_keyword.Location = new Point(16, 76);
             dataGridView_recoman_keyword.Name = "dataGridView_recoman_keyword";
             dataGridView_recoman_keyword.Size = new Size(261, 144);
@@ -630,14 +642,14 @@
             dataGridView_lv1.AllowUserToAddRows = false;
             dataGridView_lv1.AllowUserToDeleteRows = false;
             dataGridView_lv1.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridViewCellStyle15.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle15.BackColor = SystemColors.Window;
-            dataGridViewCellStyle15.Font = new Font("맑은 고딕", 14.25F, FontStyle.Regular, GraphicsUnit.Point, 129);
-            dataGridViewCellStyle15.ForeColor = SystemColors.ControlText;
-            dataGridViewCellStyle15.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle15.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle15.WrapMode = DataGridViewTriState.False;
-            dataGridView_lv1.DefaultCellStyle = dataGridViewCellStyle15;
+            dataGridViewCellStyle10.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle10.BackColor = SystemColors.Window;
+            dataGridViewCellStyle10.Font = new Font("맑은 고딕", 14.25F, FontStyle.Regular, GraphicsUnit.Point, 129);
+            dataGridViewCellStyle10.ForeColor = SystemColors.ControlText;
+            dataGridViewCellStyle10.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle10.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle10.WrapMode = DataGridViewTriState.False;
+            dataGridView_lv1.DefaultCellStyle = dataGridViewCellStyle10;
             dataGridView_lv1.Location = new Point(16, 76);
             dataGridView_lv1.Name = "dataGridView_lv1";
             dataGridView_lv1.Size = new Size(261, 144);
@@ -688,15 +700,17 @@
             dataGridView_modified.Size = new Size(583, 161);
             dataGridView_modified.TabIndex = 23;
             // 
-            // groupBox5
+            // union_cluster_btn
             // 
-            groupBox5.Controls.Add(keyword_radio1);
-            groupBox5.Controls.Add(keyword_radio2);
-            groupBox5.Location = new Point(880, 23);
-            groupBox5.Name = "groupBox5";
-            groupBox5.Size = new Size(300, 33);
-            groupBox5.TabIndex = 54;
-            groupBox5.TabStop = false;
+            union_cluster_btn.AutoSize = true;
+            union_cluster_btn.Font = new Font("맑은 고딕", 14.25F);
+            union_cluster_btn.Location = new Point(6, 91);
+            union_cluster_btn.Name = "union_cluster_btn";
+            union_cluster_btn.Size = new Size(195, 35);
+            union_cluster_btn.TabIndex = 48;
+            union_cluster_btn.Text = "선택 항목 간 병합";
+            union_cluster_btn.UseVisualStyleBackColor = true;
+            union_cluster_btn.Click += union_cluster_btn_Click;
             // 
             // uc_Clustering
             // 
@@ -712,6 +726,8 @@
             ((System.ComponentModel.ISupportInitialize)merge_check_table).EndInit();
             groupBox1.ResumeLayout(false);
             groupBox1.PerformLayout();
+            groupBox5.ResumeLayout(false);
+            groupBox5.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)merge_cluster_table).EndInit();
             groupBox3.ResumeLayout(false);
             groupBox3.PerformLayout();
@@ -722,8 +738,6 @@
             gb_separator.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)dataGridView_lv1).EndInit();
             ((System.ComponentModel.ISupportInitialize)dataGridView_modified).EndInit();
-            groupBox5.ResumeLayout(false);
-            groupBox5.PerformLayout();
             ResumeLayout(false);
         }
 
@@ -775,5 +789,6 @@
         private RadioButton keyword_radio2;
         private RadioButton keyword_radio1;
         private GroupBox groupBox5;
+        private Button union_cluster_btn;
     }
 }
