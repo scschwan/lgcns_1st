@@ -485,6 +485,15 @@ namespace FinanceTool
                 stand_col_combo.SelectedIndex = 0; // 첫 번째 열 선택
 
                 // ComboBox에 열 이름 추가
+                sub_acc_col_combo.Items.Clear();
+                sub_acc_col_combo.Items.Add("세목 열 선택");
+                foreach (string column in process_col_list)
+                {
+                    sub_acc_col_combo.Items.Add(column);
+                }
+                sub_acc_col_combo.SelectedIndex = 0; // 첫 번째 열 선택
+
+                // ComboBox에 열 이름 추가
                 dept_col_combo.Items.Clear();
                 dept_col_combo.Items.Add("부서 열 선택");
                 foreach (string column in process_col_list)
@@ -493,7 +502,6 @@ namespace FinanceTool
                 }
                 dept_col_combo.SelectedIndex = 0; // 첫 번째 열 선택
 
-                // ComboBox에 열 이름 추가
                 prod_col_combo.Items.Clear();
                 prod_col_combo.Items.Add("공급업체 열 선택");
                 foreach (string column in process_col_list)
@@ -707,6 +715,14 @@ namespace FinanceTool
         private void btn_complete_Click(object sender, EventArgs e)
         {
             //data Validation 
+            if (sub_acc_col_combo.SelectedIndex < 1)
+            {
+                MessageBox.Show("세목 열을 선택하셔야 합니다.", "알림",
+                               MessageBoxButtons.OK,
+                               MessageBoxIcon.Warning);
+                return;
+            }
+
             if (dept_col_combo.SelectedIndex < 1)
             {
                 MessageBox.Show("부서 열을 선택하셔야 합니다.", "알림",
@@ -764,24 +780,26 @@ namespace FinanceTool
 
                     // 선택된 컬럼 목록 생성
                     List<string> selectedColumns = new List<string>();
+                    selectedColumns.Add(sub_acc_col_combo.SelectedItem.ToString());
                     selectedColumns.Add(dept_col_combo.SelectedItem.ToString());
                     selectedColumns.Add(prod_col_combo.SelectedItem.ToString());
                     selectedColumns.Add(cmb_money.SelectedItem.ToString());
                     selectedColumns.Add(cmb_target.SelectedItem.ToString());
 
                     // 필요한 전역 변수 설정
+                    DataHandler.sub_acc_col_name = sub_acc_col_combo.SelectedItem.ToString();
                     DataHandler.dept_col_name = dept_col_combo.SelectedItem.ToString();
                     DataHandler.prod_col_name = prod_col_combo.SelectedItem.ToString();
                     DataHandler.levelList.Clear();
                     DataHandler.levelName.Clear();
 
                     // 금액 컬럼 인덱스 설정 (프로세스 테이블에서는 0)
-                    DataHandler.levelList.Add(4);
-                    DataHandler.moneyIndex = 4;
+                    DataHandler.levelList.Add(5);
+                    DataHandler.moneyIndex = 5;
                     DataHandler.levelName.Add(cmb_money.SelectedItem.ToString());
 
                     // 타겟 컬럼 인덱스 설정 (프로세스 테이블에서는 1)
-                    DataHandler.levelList.Add(5);
+                    DataHandler.levelList.Add(6);
                     DataHandler.levelName.Add(cmb_target.SelectedItem.ToString());
                     
 

@@ -58,6 +58,7 @@ namespace FinanceTool
 
         public static string dept_col_name;
         public static string prod_col_name;
+        public static string sub_acc_col_name;
 
         public static bool dept_col_yn = true;
         public static bool prod_col_yn = true;

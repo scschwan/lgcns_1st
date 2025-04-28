@@ -46,9 +46,9 @@
             delete_data_btn = new Button();
             stand_col_combo = new ComboBox();
             label4 = new Label();
-            dept_col_combo = new ComboBox();
+            sub_acc_col_combo = new ComboBox();
             label5 = new Label();
-            prod_col_combo = new ComboBox();
+            dept_col_combo = new ComboBox();
             label6 = new Label();
             btn_complete = new Button();
             dataGridView2 = new DataGridView();
@@ -67,6 +67,8 @@
             cmb_pageSize = new ComboBox();
             btn_prevPage = new Button();
             btn_nextPage = new Button();
+            label10 = new Label();
+            prod_col_combo = new ComboBox();
             ((System.ComponentModel.ISupportInitialize)dataGridView_target).BeginInit();
             ((System.ComponentModel.ISupportInitialize)dataGridView_process).BeginInit();
             groupBox2.SuspendLayout();
@@ -128,7 +130,7 @@
             // 
             cmb_target.Font = new Font("맑은 고딕", 14F);
             cmb_target.FormattingEnabled = true;
-            cmb_target.Location = new Point(157, 209);
+            cmb_target.Location = new Point(157, 252);
             cmb_target.Name = "cmb_target";
             cmb_target.Size = new Size(307, 33);
             cmb_target.TabIndex = 14;
@@ -137,7 +139,7 @@
             // 
             label1.AutoSize = true;
             label1.Font = new Font("맑은 고딕", 14F);
-            label1.Location = new Point(26, 212);
+            label1.Location = new Point(26, 255);
             label1.Name = "label1";
             label1.Size = new Size(87, 25);
             label1.TabIndex = 15;
@@ -147,7 +149,7 @@
             // 
             cmb_money.Font = new Font("맑은 고딕", 14F);
             cmb_money.FormattingEnabled = true;
-            cmb_money.Location = new Point(157, 159);
+            cmb_money.Location = new Point(157, 202);
             cmb_money.Name = "cmb_money";
             cmb_money.Size = new Size(307, 33);
             cmb_money.TabIndex = 18;
@@ -156,7 +158,7 @@
             // 
             label3.AutoSize = true;
             label3.Font = new Font("맑은 고딕", 14F);
-            label3.Location = new Point(26, 162);
+            label3.Location = new Point(26, 205);
             label3.Name = "label3";
             label3.Size = new Size(87, 25);
             label3.TabIndex = 19;
@@ -185,7 +187,7 @@
             groupBox2.Controls.Add(stand_col_combo);
             groupBox2.Controls.Add(label4);
             groupBox2.Font = new Font("맑은 고딕", 16F);
-            groupBox2.Location = new Point(1402, 399);
+            groupBox2.Location = new Point(1402, 372);
             groupBox2.Name = "groupBox2";
             groupBox2.Size = new Size(477, 272);
             groupBox2.TabIndex = 16;
@@ -282,14 +284,14 @@
             label4.TabIndex = 3;
             label4.Text = "기준 열 선택 :";
             // 
-            // dept_col_combo
+            // sub_acc_col_combo
             // 
-            dept_col_combo.Font = new Font("맑은 고딕", 14F);
-            dept_col_combo.FormattingEnabled = true;
-            dept_col_combo.Location = new Point(157, 54);
-            dept_col_combo.Name = "dept_col_combo";
-            dept_col_combo.Size = new Size(307, 33);
-            dept_col_combo.TabIndex = 23;
+            sub_acc_col_combo.Font = new Font("맑은 고딕", 14F);
+            sub_acc_col_combo.FormattingEnabled = true;
+            sub_acc_col_combo.Location = new Point(157, 54);
+            sub_acc_col_combo.Name = "sub_acc_col_combo";
+            sub_acc_col_combo.Size = new Size(307, 33);
+            sub_acc_col_combo.TabIndex = 23;
             // 
             // label5
             // 
@@ -299,16 +301,16 @@
             label5.Name = "label5";
             label5.Size = new Size(87, 25);
             label5.TabIndex = 24;
-            label5.Text = "부서 열 :";
+            label5.Text = "세목 열 :";
             // 
-            // prod_col_combo
+            // dept_col_combo
             // 
-            prod_col_combo.Font = new Font("맑은 고딕", 14F);
-            prod_col_combo.FormattingEnabled = true;
-            prod_col_combo.Location = new Point(157, 104);
-            prod_col_combo.Name = "prod_col_combo";
-            prod_col_combo.Size = new Size(308, 33);
-            prod_col_combo.TabIndex = 21;
+            dept_col_combo.Font = new Font("맑은 고딕", 14F);
+            dept_col_combo.FormattingEnabled = true;
+            dept_col_combo.Location = new Point(157, 104);
+            dept_col_combo.Name = "dept_col_combo";
+            dept_col_combo.Size = new Size(308, 33);
+            dept_col_combo.TabIndex = 21;
             // 
             // label6
             // 
@@ -316,15 +318,15 @@
             label6.Font = new Font("맑은 고딕", 14F);
             label6.Location = new Point(26, 107);
             label6.Name = "label6";
-            label6.Size = new Size(125, 25);
+            label6.Size = new Size(87, 25);
             label6.TabIndex = 22;
-            label6.Text = "공급업체 열 :";
+            label6.Text = "부서 열 :";
             // 
             // btn_complete
             // 
             btn_complete.AutoSize = true;
             btn_complete.Font = new Font("맑은 고딕", 14.25F);
-            btn_complete.Location = new Point(342, 273);
+            btn_complete.Location = new Point(343, 300);
             btn_complete.Name = "btn_complete";
             btn_complete.Size = new Size(122, 35);
             btn_complete.TabIndex = 38;
@@ -347,7 +349,7 @@
             groupBox3.Controls.Add(dataGridView_delete_col);
             groupBox3.Controls.Add(restore_col_btn);
             groupBox3.Font = new Font("맑은 고딕", 16F);
-            groupBox3.Location = new Point(1402, 120);
+            groupBox3.Location = new Point(1402, 93);
             groupBox3.Name = "groupBox3";
             groupBox3.Size = new Size(477, 268);
             groupBox3.TabIndex = 43;
@@ -402,19 +404,21 @@
             // 
             // groupBox1
             // 
+            groupBox1.Controls.Add(label10);
+            groupBox1.Controls.Add(prod_col_combo);
             groupBox1.Controls.Add(label5);
             groupBox1.Controls.Add(label1);
             groupBox1.Controls.Add(cmb_target);
             groupBox1.Controls.Add(label3);
             groupBox1.Controls.Add(cmb_money);
-            groupBox1.Controls.Add(dept_col_combo);
+            groupBox1.Controls.Add(sub_acc_col_combo);
             groupBox1.Controls.Add(label6);
-            groupBox1.Controls.Add(prod_col_combo);
+            groupBox1.Controls.Add(dept_col_combo);
             groupBox1.Controls.Add(btn_complete);
             groupBox1.Font = new Font("맑은 고딕", 16F);
-            groupBox1.Location = new Point(1402, 683);
+            groupBox1.Location = new Point(1402, 650);
             groupBox1.Name = "groupBox1";
-            groupBox1.Size = new Size(477, 314);
+            groupBox1.Size = new Size(477, 347);
             groupBox1.TabIndex = 44;
             groupBox1.TabStop = false;
             groupBox1.Text = "필수 항목 설정";
@@ -510,6 +514,25 @@
             btn_nextPage.UseVisualStyleBackColor = true;
             btn_nextPage.Click += btn_nextPage_Click;
             // 
+            // label10
+            // 
+            label10.AutoSize = true;
+            label10.Font = new Font("맑은 고딕", 14F);
+            label10.Location = new Point(26, 158);
+            label10.Name = "label10";
+            label10.Size = new Size(125, 25);
+            label10.TabIndex = 40;
+            label10.Text = "공급업체 열 :";
+            // 
+            // prod_col_combo
+            // 
+            prod_col_combo.Font = new Font("맑은 고딕", 14F);
+            prod_col_combo.FormattingEnabled = true;
+            prod_col_combo.Location = new Point(157, 155);
+            prod_col_combo.Name = "prod_col_combo";
+            prod_col_combo.Size = new Size(308, 33);
+            prod_col_combo.TabIndex = 39;
+            // 
             // uc_FileLoad
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -569,9 +592,9 @@
         private Button delete_data_btn;
         private ComboBox stand_col_combo;
         private Label label4;
-        private ComboBox dept_col_combo;
+        private ComboBox sub_acc_col_combo;
         private Label label5;
-        private ComboBox prod_col_combo;
+        private ComboBox dept_col_combo;
         private Label label6;
         private Button button7;
         private Button button6;
@@ -596,5 +619,7 @@
         private TextBox delete_search_keyword;
         private Button delete_search_button;
         private Label label7;
+        private Label label10;
+        private ComboBox prod_col_combo;
     }
 }

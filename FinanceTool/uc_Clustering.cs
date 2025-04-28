@@ -496,74 +496,6 @@ namespace FinanceTool
             }
         }
 
-        //regacy-code
-        private void SetupDataGridView(DataGridView dgv, DataTable dt)
-        {
-            // 조건에 맞는 데이터만 필터링
-            var filteredData = dt.AsEnumerable()
-                .Where(row =>
-                    Convert.ToInt32(row["ClusterID"]) <= 0 ||
-                    Convert.ToInt32(row["ClusterID"]) == Convert.ToInt32(row["ID"]))
-                .CopyToDataTable();
-
-            dgv.DataSource = filteredData;
-
-            Debug.WriteLine($"dt Count : {dt.Rows.Count}");
-            Debug.WriteLine($"filteredData Count : {filteredData.Rows.Count}");
-
-
-            // ID 컬럼 숨기기
-            if (dgv.Columns["ID"] != null)
-            {
-                dgv.Columns["ID"].Visible = false;
-            }
-
-            // ClusterID 컬럼 숨기기
-            dgv.Columns["ClusterID"].Visible = false;
-
-            // dataIndex 컬럼 숨기기
-            dgv.Columns["dataIndex"].Visible = false;
-
-
-            // Count 컬럼 형식 지정
-            if (dgv.Columns["Count"] != null)
-            {
-                dgv.Columns["Count"].DefaultCellStyle.Format = "N0"; // 천 단위 구분자
-                dgv.Columns["Count"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
-            }
-
-            // 합산금액 컬럼 형식 지정
-            if (dgv.Columns["합산금액"] != null)
-            {
-                dgv.Columns["합산금액"].DefaultCellStyle.Format = "N0"; // 천 단위 구분자
-                dgv.Columns["합산금액"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
-            }
-
-            // 클러스터명 컬럼 수정 가능 설정 (transformDataTable인 경우에만)
-            //수정 기능 전부 삭제
-            if (dt == DataHandler.finalClusteringData && dgv.Columns["클러스터명"] != null)
-            {
-                //dgv.Columns["클러스터명"].ReadOnly = false;
-                //dgv.CellEndEdit += DataGridView_CellEndEdit;
-                dgv.Columns["클러스터명"].ReadOnly = true;
-            }
-            else if (dgv.Columns["클러스터명"] != null)
-            {
-                //Debug.WriteLine("second table logic 적용");
-                dgv.Columns["클러스터명"].ReadOnly = true;
-            }
-
-            // 나머지 컬럼들은 읽기 전용
-            if (dgv.Columns["키워드목록"] != null)
-            {
-                dgv.Columns["키워드목록"].ReadOnly = true;
-            }
-
-            // 기본 설정
-            dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            dgv.AllowUserToAddRows = false;
-            dgv.AllowUserToDeleteRows = false;
-        }
 
         private async void create_merge_keyword_list(bool isAlreadyProgress = false)
         {
@@ -1047,6 +979,7 @@ namespace FinanceTool
 
             dgv.Columns.Add(checkColumn);
 
+
             // 원본 DataTable의 컬럼들 추가
             foreach (DataColumn col in dt.Columns)
             {
@@ -1272,6 +1205,50 @@ namespace FinanceTool
 
             dgv.SortCompare -= DataHandler.money_SortCompare;
             dgv.SortCompare += DataHandler.money_SortCompare;
+
+            //2025.04.28
+            // 컬럼 순서 재배치
+            //선택박스, Count수, 세목열, 타겟열, 공급업체열, 부서열,금액열
+            List<string> desiredOrder = new List<string>
+                {
+                    "CheckBox",
+                    "Count",
+                    DataHandler.sub_acc_col_name,
+                    DataHandler.levelName[DataHandler.levelName.Count - 1],
+                    DataHandler.prod_col_name,
+                    DataHandler.dept_col_name,
+                    "합산금액"
+                };
+
+            // 기존 컬럼 위치 저장
+            Dictionary<string, int> originalIndices = new Dictionary<string, int>();
+            for (int i = 0; i < dgv.Columns.Count; i++)
+            {
+                originalIndices[dgv.Columns[i].Name] = i;
+            }
+
+            // 새로운 컬럼 순서 설정
+            for (int i = 0; i < desiredOrder.Count; i++)
+            {
+                string colName = desiredOrder[i];
+                if (dgv.Columns.Contains(colName))
+                {
+                    dgv.Columns[colName].DisplayIndex = i;
+                }
+            }
+
+            // 나머지 컬럼들은 기존 순서 유지
+            // 나머지 컬럼들은 기존 순서 유지하되 우선 순위가 낮은 컬럼으로 배치
+            var remainingColumns = dgv.Columns.Cast<DataGridViewColumn>()
+                                     .Where(col => !desiredOrder.Contains(col.Name))
+                                     .OrderBy(col => originalIndices[col.Name])
+                                     .ToList();
+
+            int nextIndex = desiredOrder.Count;
+            foreach (var col in remainingColumns)
+            {
+                col.DisplayIndex = nextIndex++;
+            }
         }
 
         public void CreateCheckDataGridView(DataGridView dgv, DataTable dt, List<string> filterWords)
