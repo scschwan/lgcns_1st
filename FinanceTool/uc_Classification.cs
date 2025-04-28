@@ -34,13 +34,14 @@ namespace FinanceTool
 
         public async void initUI()
         {
-            
+
 
             //visible column list 조회
             GetColumnList();
 
+            // DataHandler.finalClusteringData를 확장한 DataTable 생성
+            DataTable enhancedClusteringData = await CreateEnhancedClusteringData();
 
-            
 
             // 메인 UI 스레드로 돌아가서 DataHandler 등록
             await Task.Run(() =>
@@ -49,12 +50,17 @@ namespace FinanceTool
                 {
                     Application.OpenForms[0].Invoke((MethodInvoker)delegate
                     {
-                        
+
                         LoadPagedDataAsync();
 
                         Debug.WriteLine("");
 
-                        CreateCheckDataGridView(dataGridView_classify, DataHandler.finalClusteringData);
+                        //CreateCheckDataGridView(dataGridView_classify, DataHandler.finalClusteringData);
+
+
+                        // 확장된 DataTable을 이용하여 dataGridView_classify 구성
+                        CreateCheckDataGridView(dataGridView_classify, enhancedClusteringData);
+
 
                         //dataGridView_classify 이벤트 추가
 
@@ -67,8 +73,110 @@ namespace FinanceTool
                     });
                 }
             });
-            
+
         }
+
+        private async Task<DataTable> CreateEnhancedClusteringData()
+        {
+            // 원본 데이터 복사
+            DataTable enhancedTable = DataHandler.finalClusteringData.Copy();
+
+            // 공급업체명과 부서명 컬럼 추가
+            enhancedTable.Columns.Add(DataHandler.prod_col_name, typeof(string));
+            enhancedTable.Columns.Add(DataHandler.dept_col_name, typeof(string));
+
+            // ClusterID 기반으로 dataIndex 그룹화
+            var clusterGroups = DataHandler.finalClusteringData.AsEnumerable()
+                .GroupBy(row => row.Field<int>("ClusterID"))
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            // 각 ClusterID에 대한 dataIndex 수집
+            Dictionary<int, List<int>> clusterToDataIndices = new Dictionary<int, List<int>>();
+
+            foreach (var clusterGroup in clusterGroups)
+            {
+                int clusterId = clusterGroup.Key;
+                List<int> dataIndices = new List<int>();
+
+                foreach (var row in clusterGroup.Value)
+                {
+                    string dataIndexStr = row["dataIndex"].ToString();
+                    if (!string.IsNullOrEmpty(dataIndexStr))
+                    {
+                        // 쉼표로 구분된 dataIndex 파싱
+                        string[] indices = dataIndexStr.Split(',');
+                        foreach (string indexStr in indices)
+                        {
+                            if (int.TryParse(indexStr.Trim(), out int index))
+                            {
+                                dataIndices.Add(index);
+                            }
+                        }
+                    }
+                }
+
+                // 중복 제거
+                clusterToDataIndices[clusterId] = dataIndices.Distinct().ToList();
+            }
+
+            // 각 ClusterID에 대한 공급업체명과 부서명 조회 및 설정
+            foreach (var kvp in clusterToDataIndices)
+            {
+                int clusterId = kvp.Key;
+                List<int> dataIndices = kvp.Value;
+
+                if (dataIndices.Count == 0)
+                    continue;
+
+                // ID 목록 문자열 생성
+                string idListStr = string.Join(",", dataIndices);
+
+                // 공급업체명 및 부서명 조회
+                string query = $@"
+            SELECT DISTINCT {DataHandler.prod_col_name}, {DataHandler.dept_col_name}
+            FROM raw_data
+            WHERE id IN ({idListStr})";
+
+                DataTable resultTable = DBManager.Instance.ExecuteQuery(query);
+
+                // 결과가 없으면 다음으로
+                if (resultTable.Rows.Count == 0)
+                    continue;
+
+                // 공급업체명 및 부서명 집계
+                HashSet<string> uniqueProds = new HashSet<string>();
+                HashSet<string> uniqueDepts = new HashSet<string>();
+
+                foreach (DataRow resultRow in resultTable.Rows)
+                {
+                    string prod = resultRow[DataHandler.prod_col_name]?.ToString();
+                    string dept = resultRow[DataHandler.dept_col_name]?.ToString();
+
+                    if (!string.IsNullOrEmpty(prod))
+                        uniqueProds.Add(prod);
+
+                    if (!string.IsNullOrEmpty(dept))
+                        uniqueDepts.Add(dept);
+                }
+
+                // 쉼표로 구분된 문자열로 변환
+                string combinedProds = string.Join(",", uniqueProds);
+                string combinedDepts = string.Join(",", uniqueDepts);
+
+                // enhancedTable에 해당 ClusterID를 가진 모든 행에 값 설정
+                foreach (DataRow enhancedRow in enhancedTable.Rows)
+                {
+                    if (!enhancedRow.IsNull("ClusterID") && enhancedRow.Field<int>("ClusterID") == clusterId)
+                    {
+                        enhancedRow[DataHandler.prod_col_name] = combinedProds;
+                        enhancedRow[DataHandler.dept_col_name] = combinedDepts;
+                    }
+                }
+            }
+
+            return enhancedTable;
+        }
+
 
         private void InitializePagingControls(bool attachEvents)
         {
@@ -370,9 +478,10 @@ namespace FinanceTool
 
             // DataGridView 속성 설정
             dgv.AllowUserToAddRows = false;
-            dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            //dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
             dgv.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            
+
             // 나머지 컬럼들은 읽기 전용으로 설정
             for (int i = 1; i < dgv.Columns.Count; i++)
             {
@@ -382,11 +491,12 @@ namespace FinanceTool
             dgv.Columns["클러스터명"].ReadOnly = false;  // 클러스터명 편집 가능
             //dgv.CellEndEdit += DataGridView_CellEndEdit;
             //dgv.Font = new System.Drawing.Font("맑은 고딕", 14.25F);
+            dgv.Font = new System.Drawing.Font("맑은 고딕", 9F);
             // "클러스터명" 컬럼의 배경색을 연노란색으로 설정
             dgv.Columns["클러스터명"].DefaultCellStyle.BackColor = System.Drawing.Color.LightYellow;
         }
 
-        
+
 
         public DataTable ConvertDataGridViewToCustomDataTable(DataGridView dgv)
         {
@@ -567,7 +677,7 @@ namespace FinanceTool
                 return;
             }
 
-           
+
         }
 
         public void GetColumnList()
@@ -622,13 +732,13 @@ namespace FinanceTool
             return checkedData;
         }
 
-        
+
 
         private async void dataGridView_classify_CellValueChanged(object sender, DataGridViewCellEventArgs e)
         {
             Debug.WriteLine("call dataGridView_classify_CellValueChanged");
             // "클러스터명" 컬럼이 변경되었을 때만 처리
-            
+
             if (e.ColumnIndex == dataGridView_classify.Columns["클러스터명"].Index && e.RowIndex >= 0)
             {
                 //UpdateClusterName(dataGridView_keyword, DataHandler.processTable, DataHandler.finalClusteringData, e.RowIndex);
@@ -679,7 +789,7 @@ namespace FinanceTool
             for (int i = 0; i < dataGridView_keyword.Columns.Count; i++)
             {
                 //부서,공급업체명,금액,타겟열,클러스터명은 제외
-                if (dataGridView_keyword.Columns[i].Name.Equals(DataHandler.dept_col_name) || dataGridView_keyword.Columns[i].Name.Equals(DataHandler.prod_col_name))
+                if (dataGridView_keyword.Columns[i].Name.Equals(DataHandler.dept_col_name) || dataGridView_keyword.Columns[i].Name.Equals(DataHandler.prod_col_name) || dataGridView_keyword.Columns[i].Name.Equals(DataHandler.sub_acc_col_name))
                 {
                     continue;
                 }
@@ -707,7 +817,7 @@ namespace FinanceTool
             }
 
             GetColumnList();
-            
+
         }
 
         private void del_col_list_allcheck_CheckedChanged(object sender, EventArgs e)
@@ -960,8 +1070,229 @@ namespace FinanceTool
                 }
             }
 
+
+
+        }
+
+
+        //2025.04.28
+        //상세 항목을 불러오는게 어려운 상황이라 우선 구현 skip
+        private void dataGridView_classify_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            
+            // 헤더 행 클릭시 무시
+            if (e.RowIndex < 0)
+                return;
+
+            // "클러스터명" 컬럼 클릭 시 이벤트 무시
+            if (e.ColumnIndex >= 0 && dataGridView_classify.Columns[e.ColumnIndex].Name == "클러스터명")
+                return;
+            
+            /*
+            // 선택된 행에서 ClusterID 또는 ID 값 가져오기
+            DataGridViewRow selectedRow = dataGridView_classify.Rows[e.RowIndex];
+
+            // ClusterID 컬럼이 있으면 사용, 없으면 ID 컬럼 사용
+            int selectedClusterId;
+            string selectedClusterName;
+            if (selectedRow.Cells["ClusterID"] != null && selectedRow.Cells["ClusterID"].Value != null)
+            {
+                selectedClusterId = Convert.ToInt32(selectedRow.Cells["ClusterID"].Value);
+                selectedClusterName = selectedRow.Cells["클러스터명"].Value.ToString();
+            }
+            else if (selectedRow.Cells["ID"] != null && selectedRow.Cells["ID"].Value != null)
+            {
+                selectedClusterId = Convert.ToInt32(selectedRow.Cells["ID"].Value);
+                selectedClusterName = selectedRow.Cells["클러스터명"].Value.ToString();
+            }
+            else
+            {
+                // ID, ClusterID 모두 없는 경우 예외 처리
+                MessageBox.Show("클러스터 ID를 찾을 수 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // 팝업 폼 생성 및 표시
+            ShowClusterDetailPopup(selectedClusterId , selectedClusterName);
+            */
+        }
+
+        private void ShowClusterDetailPopup(int selectedClusterId ,string selectedClusterName)
+        {
+            // 팝업용 Form 생성
+            Form popupForm = new Form
+            {
+                Text = $"클러스터 상세 내역 (클러스터명: {selectedClusterName})",
+                StartPosition = FormStartPosition.CenterParent,
+                Size = new Size(1800, 1000),
+                MinimizeBox = false,
+                MaximizeBox = true,
+                FormBorderStyle = FormBorderStyle.Sizable
+            };
+
+            // DataGridView 생성
+            DataGridView detailGridView = new DataGridView
+            {
+                Dock = DockStyle.Fill,
+                AllowUserToAddRows = false,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None,
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                ReadOnly = true,
+                Font = new System.Drawing.Font("맑은 고딕", 9F)
+            };
+
+            // DataGridView 초기화
+            detailGridView.Rows.Clear();
+            detailGridView.Columns.Clear();
+
           
 
+            // 원본 DataTable의 컬럼들 추가
+            foreach (DataColumn col in DataHandler.finalClusteringData.Columns)
+            {
+                detailGridView.Columns.Add(col.ColumnName, col.ColumnName);
+            }
+
+            // 데이터 필터링 및 추가
+            foreach (DataRow row in DataHandler.finalClusteringData.Rows)
+            {
+                if (!row.IsNull("ClusterID") && Convert.ToInt32(row["ClusterID"]) == selectedClusterId)
+                {
+                    int rowIndex = detailGridView.Rows.Add();
+                    
+                    for (int i = 0; i < DataHandler.finalClusteringData.Columns.Count; i++)
+                    {
+                        // 합산금액 컬럼은 포맷 적용
+                        if ("합산금액".Equals(DataHandler.finalClusteringData.Columns[i].ColumnName))
+                        {
+                            //detailGridView.Rows[rowIndex].Cells[i].Value = FormatToKoreanUnit(Convert.ToDecimal(row[i]));
+                            detailGridView.Rows[rowIndex].Cells[i].Value = Convert.ToDecimal(row[i]);
+                        }
+                        else
+                        {
+                            detailGridView.Rows[rowIndex].Cells[i].Value = row[i];
+                        }
+                    }
+                }
+            }
+
+            // 필요한 컬럼 숨기기
+            if (detailGridView.Columns["ID"] != null)
+                detailGridView.Columns["ID"].Visible = false;
+
+            if (detailGridView.Columns["ClusterID"] != null)
+                detailGridView.Columns["ClusterID"].Visible = false;
+
+            if (detailGridView.Columns["dataIndex"] != null)
+                detailGridView.Columns["dataIndex"].Visible = false;
+
+            if (detailGridView.Columns["import_date"] != null)
+                detailGridView.Columns["import_date"].Visible = false;
+
+            // Count 컬럼 포맷 설정
+            if (detailGridView.Columns["Count"] != null)
+            {
+                detailGridView.Columns["Count"].DefaultCellStyle.Format = "N0";
+                detailGridView.Columns["Count"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+            }
+
+            // 기타 DataGridView 속성 설정
+            detailGridView.AllowUserToAddRows = false;
+            detailGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
+            detailGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            detailGridView.ReadOnly = false;
+
+            // 나머지 컬럼들은 읽기 전용으로 설정
+            for (int i = 1; i < detailGridView.Columns.Count; i++)
+            {
+                detailGridView.Columns[i].ReadOnly = true;
+            }
+
+            // 클러스터명 컬럼 설정
+            if (detailGridView.Columns["클러스터명"] != null)
+            {
+                detailGridView.Columns["클러스터명"].ReadOnly = true;
+                detailGridView.Columns["클러스터명"].Width = 400;
+                detailGridView.Columns["클러스터명"].AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+            }
+
+            // 타겟 컬럼 너비 고정
+            if (DataHandler.levelName.Count > 0)
+            {
+                string lastLevelName = DataHandler.levelName[DataHandler.levelName.Count - 1];
+                if (detailGridView.Columns[lastLevelName] != null)
+                {
+                    detailGridView.Columns[lastLevelName].Width = 400;
+                    detailGridView.Columns[lastLevelName].AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+                }
+            }
+
+            // 나머지 컬럼은 자동 크기 조정
+            for (int i = 1; i < detailGridView.Columns.Count; i++)
+            {
+                string colName = detailGridView.Columns[i].Name;
+                if (colName != "클러스터명" &&
+                    colName != DataHandler.prod_col_name &&
+                    (DataHandler.levelName.Count == 0 || colName != DataHandler.levelName[DataHandler.levelName.Count - 1]))
+                {
+                    detailGridView.Columns[i].AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+                }
+            }
+
+            // SortCompare 이벤트 핸들러 추가
+            detailGridView.SortCompare -= DataHandler.money_SortCompare;
+            detailGridView.SortCompare += DataHandler.money_SortCompare;
+
+            // 컬럼 순서 재배치
+            List<string> desiredOrder = new List<string>
+                {
+                    "Count",
+                    DataHandler.sub_acc_col_name,
+                    DataHandler.levelName[DataHandler.levelName.Count - 1],
+                    DataHandler.prod_col_name,
+                    DataHandler.dept_col_name,
+                    "합산금액"
+                };
+
+            // 기존 컬럼 위치 저장
+            Dictionary<string, int> originalIndices = new Dictionary<string, int>();
+            for (int i = 0; i < detailGridView.Columns.Count; i++)
+            {
+                originalIndices[detailGridView.Columns[i].Name] = i;
+            }
+
+            // 새로운 컬럼 순서 설정
+            for (int i = 0; i < desiredOrder.Count; i++)
+            {
+                string colName = desiredOrder[i];
+                if (detailGridView.Columns.Contains(colName))
+                {
+                    detailGridView.Columns[colName].DisplayIndex = i;
+                }
+            }
+
+            // 나머지 컬럼들은 안전하게 순서 설정
+            var remainingColumns = detailGridView.Columns.Cast<DataGridViewColumn>()
+                .Where(col => !desiredOrder.Contains(col.Name))
+                .ToList();
+
+            int nextIndex = desiredOrder.Count;
+            foreach (var col in remainingColumns)
+            {
+                try
+                {
+                    col.DisplayIndex = nextIndex++;
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                    // 오류 발생 시 최대 허용 인덱스로 설정
+                    col.DisplayIndex = detailGridView.Columns.Count - 1;
+                }
+            }
+
+            // 팝업 폼에 DataGridView 추가 및 표시
+            popupForm.Controls.Add(detailGridView);
+            popupForm.ShowDialog();
         }
     }
 }

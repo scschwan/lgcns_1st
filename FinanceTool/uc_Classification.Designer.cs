@@ -88,6 +88,7 @@
             dataGridView_classify.Name = "dataGridView_classify";
             dataGridView_classify.Size = new Size(454, 516);
             dataGridView_classify.TabIndex = 2;
+            dataGridView_classify.CellClick += dataGridView_classify_CellClick;
             dataGridView_classify.CellValueChanged += dataGridView_classify_CellValueChanged;
             // 
             // label1
