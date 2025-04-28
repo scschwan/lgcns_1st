@@ -1513,35 +1513,79 @@ namespace FinanceTool
         {
             // 디버깅을 위한 로깅 추가
             //Debug.WriteLine($"SortCompare 호출됨: DataGridView={sender.GetType().Name}, Column={e.Column.Name}, HeaderText={e.Column.HeaderText}");
-
-            // 정렬이 어떤 DataGridView에서 발생했는지 확인
-            DataGridView grid = sender as DataGridView;
-            if (grid != null)
+            try
             {
-                //Debug.WriteLine($"DataGridView 이름: {grid.Name}");
-            }
+                // 정렬이 어떤 DataGridView에서 발생했는지 확인
+                // 디버그 로그 추가
+                //Debug.WriteLine($"정렬 시도: Column={e.Column.Name}, HeaderText={e.Column.HeaderText}, ValueType={e.Column.ValueType}");
 
-            // "금액" 컬럼에 대해서만 커스텀 정렬 적용
-            if (e.Column.Name == "합산금액" || e.Column.HeaderText == "합산금액" || e.Column.Name == "total_money" || e.Column.HeaderText == "total_money")
+                // 두 값이 모두 null이면 동등하게 처리
+                if ((e.CellValue1 == null || e.CellValue1 == DBNull.Value) &&
+                    (e.CellValue2 == null || e.CellValue2 == DBNull.Value))
+                {
+                    e.SortResult = 0;
+                    e.Handled = true;
+                    return;
+                }
+
+                // 값1이 null이면 값2보다 작게 처리
+                if (e.CellValue1 == null || e.CellValue1 == DBNull.Value)
+                {
+                    e.SortResult = -1;
+                    e.Handled = true;
+                    return;
+                }
+
+                // 값2가 null이면 값1보다 크게 처리
+                if (e.CellValue2 == null || e.CellValue2 == DBNull.Value)
+                {
+                    e.SortResult = 1;
+                    e.Handled = true;
+                    return;
+                }
+
+                // "금액" 컬럼에 대해서만 커스텀 정렬 적용
+                if (e.Column.Name == "합산금액" || e.Column.HeaderText == "합산금액" || e.Column.Name == "total_money" || e.Column.HeaderText == "total_money")
+                {
+                    //Debug.WriteLine($"커스텀 정렬 적용: Column={e.Column.Name}, HeaderText={e.Column.HeaderText}");
+                    // 셀 값에서 숫자만 추출
+                    Decimal val1 = ExtractNumber(e.CellValue1?.ToString() ?? "");
+                    Decimal val2 = ExtractNumber(e.CellValue2?.ToString() ?? "");
+
+                    //Debug.WriteLine($"비교 값: {e.CellValue1} ({val1}) vs {e.CellValue2} ({val2})");
+
+                    // 숫자 기준으로 비교
+                    e.SortResult = val1.CompareTo(val2);
+                    // 이벤트 처리 완료 표시
+                    e.Handled = true;
+
+                    //Debug.WriteLine("커스텀 정렬 완료");
+                }
+                else if (e.Column.ValueType == typeof(string))
+                {
+                    //Debug.WriteLine($"[string]기본 정렬 사용: Column={e.Column.Name}, HeaderText={e.Column.HeaderText} , ValueType={e.Column.ValueType}");
+                    // 문자열 타입에 대한 안전한 처리 추가
+                    string value1 = e.CellValue1?.ToString() ?? string.Empty;
+                    string value2 = e.CellValue2?.ToString() ?? string.Empty;
+
+                    e.SortResult = string.Compare(value1, value2);
+                    e.Handled = true;
+                }
+                else
+                {
+                    //Debug.WriteLine($"[default]기본 정렬 사용: Column={e.Column.Name}, HeaderText={e.Column.HeaderText} , ValueType={e.Column.ValueType}");
+                }
+            }
+            catch (Exception ex)
             {
-                //Debug.WriteLine($"커스텀 정렬 적용: Column={e.Column.Name}, HeaderText={e.Column.HeaderText}");
-                // 셀 값에서 숫자만 추출
-                Decimal val1 = ExtractNumber(e.CellValue1?.ToString() ?? "");
-                Decimal val2 = ExtractNumber(e.CellValue2?.ToString() ?? "");
+                // 예외 발생 시 로그 기록
+                Debug.WriteLine($"정렬 중 예외 발생: {ex.Message}");
 
-                //Debug.WriteLine($"비교 값: {e.CellValue1} ({val1}) vs {e.CellValue2} ({val2})");
-
-                // 숫자 기준으로 비교
-                e.SortResult = val1.CompareTo(val2);
-                // 이벤트 처리 완료 표시
-                e.Handled = true;
-
-                //Debug.WriteLine("커스텀 정렬 완료");
+                // 기본 정렬 사용
+                Debug.WriteLine($"기본 정렬 사용: Column={e.Column.Name}, HeaderText={e.Column.HeaderText}");
+                e.Handled = false;
             }
-            else
-            {
-                //Debug.WriteLine($"기본 정렬 사용: Column={e.Column.Name}, HeaderText={e.Column.HeaderText}");
-            }
+           
         }
 
         // 문자열에서 숫자만 추출하는 함수

@@ -2464,16 +2464,16 @@ namespace FinanceTool
                 // 키워드를 그룹화하여 집계할 Dictionary 생성
                 Dictionary<string, KeywordData> keywordDict = new Dictionary<string, KeywordData>();
 
-       
-       
+
+
 
                 // 모든 키워드 추출 및 집계
                 foreach (var row in unboundClusters)
                 {
                     string keywordList = row["키워드목록"].ToString();
-                string[] keywords = keywordList.Split(',');
-                int rowCount = Convert.ToInt32(row["Count"]);
-                decimal rowAmount = Convert.ToDecimal(row["합산금액"]);
+                    string[] keywords = keywordList.Split(',');
+                    int rowCount = Convert.ToInt32(row["Count"]);
+                    decimal rowAmount = Convert.ToDecimal(row["합산금액"]);
 
                     foreach (string keyword in keywords)
                     {
@@ -2494,7 +2494,7 @@ namespace FinanceTool
                             {
                                 Count = rowCount,
                                 TotalAmount = rowAmount
-                                };
+                            };
                         }
                     }
                 }
@@ -2717,6 +2717,220 @@ namespace FinanceTool
                 MessageBox.Show($"클러스터 병합 중 오류가 발생했습니다: {ex.Message}",
                     "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+
+        public void ShowMergeClusterDetail()
+        {
+            // 1. merge_check_table에서 체크된 행의 ClusterID 값을 가져옴
+            List<int> checkedClusterIds = new List<int>();
+            List<string> checkedClusterName = new List<string>();
+
+            foreach (DataGridViewRow row in merge_check_table.Rows)
+            {
+                // 체크된 항목의 ClusterID 수집
+                DataGridViewCheckBoxCell checkCell = row.Cells[0] as DataGridViewCheckBoxCell;
+                if (checkCell != null && checkCell.Value != null && Convert.ToBoolean(checkCell.Value))
+                {
+                    int clusterId = Convert.ToInt32(row.Cells["ClusterID"].Value);
+                    string checkclusterName = row.Cells["클러스터명"].Value.ToString();
+                    checkedClusterIds.Add(clusterId);
+                    checkedClusterName.Add(checkclusterName);
+                }
+            }
+
+            // 2. 체크된 항목이 1개가 아닌 경우 경고 다이얼로그 출력 후 종료
+            if (checkedClusterIds.Count != 1)
+            {
+                MessageBox.Show("클러스터 상세 내역 확인을 위해서는 정확히 1개의 클러스터를 선택해주세요.",
+                    "알림", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // 3. 선택된 ClusterID 가져오기
+            int selectedClusterId = checkedClusterIds[0];
+            string selectedClusterName = checkedClusterName[0];
+
+            // 4. 팝업용 Form 생성
+            Form popupForm = new Form
+            {
+                //Text = $"클러스터 상세 내역 (ClusterID: {selectedClusterId})",
+                Text = $"클러스터 상세 내역 (클러스터명: {selectedClusterName})",
+                StartPosition = FormStartPosition.CenterParent,
+                Size = new Size(1800, 1000),
+                MinimizeBox = false,
+                MaximizeBox = true,
+                FormBorderStyle = FormBorderStyle.Sizable
+            };
+
+            // 5. DataGridView 생성
+            DataGridView detailGridView = new DataGridView
+            {
+                Dock = DockStyle.Fill,
+                AllowUserToAddRows = false,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None,
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                ReadOnly = true,
+                Font = new System.Drawing.Font("맑은 고딕", 9F)
+            };
+
+            // 6. DataGridView 초기화
+            detailGridView.Rows.Clear();
+            detailGridView.Columns.Clear();
+
+            // 8. 원본 DataTable의 컬럼들 추가
+            foreach (DataColumn col in mergeClusterDataTable.Columns)
+            {
+                detailGridView.Columns.Add(col.ColumnName, col.ColumnName);
+            }
+
+            // 9. 데이터 필터링 및 추가 (CreateFilteredDataGridView 함수와 같은 방식으로)
+            foreach (DataRow row in mergeClusterDataTable.Rows)
+            {
+                if (!row.IsNull("ClusterID") && Convert.ToInt32(row["ClusterID"]) == selectedClusterId)
+                {
+                    int rowIndex = detailGridView.Rows.Add();                   
+
+                    for (int i = 0; i < mergeClusterDataTable.Columns.Count; i++)
+                    {
+                        // 합산금액 컬럼은 포맷 적용
+                        if ("합산금액".Equals(mergeClusterDataTable.Columns[i].ColumnName))
+                        {
+                            detailGridView.Rows[rowIndex].Cells[i].Value = FormatToKoreanUnit(Convert.ToDecimal(row[i]));
+                        }
+                        else
+                        {
+                            detailGridView.Rows[rowIndex].Cells[i].Value = row[i];
+                        }
+                    }
+                }
+            }
+
+            // 10. 필요한 컬럼 숨기기
+            if (detailGridView.Columns["ID"] != null)
+                detailGridView.Columns["ID"].Visible = false;
+
+            if (detailGridView.Columns["ClusterID"] != null)
+                detailGridView.Columns["ClusterID"].Visible = false;
+
+            if (detailGridView.Columns["dataIndex"] != null)
+                detailGridView.Columns["dataIndex"].Visible = false;
+
+            if (detailGridView.Columns["import_date"] != null)
+                detailGridView.Columns["import_date"].Visible = false;
+
+            // 11. Count 컬럼 포맷 설정
+            if (detailGridView.Columns["Count"] != null)
+            {
+                detailGridView.Columns["Count"].DefaultCellStyle.Format = "N0"; // 천 단위 구분자
+                detailGridView.Columns["Count"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+            }
+
+            // 12. 기타 DataGridView 속성 설정
+            detailGridView.AllowUserToAddRows = false;
+            detailGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
+            detailGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            detailGridView.ReadOnly = false;
+
+            // 나머지 컬럼들은 읽기 전용으로 설정
+            for (int i = 1; i < detailGridView.Columns.Count; i++)
+            {
+                detailGridView.Columns[i].ReadOnly = true;
+            }
+
+            // 클러스터명 컬럼 설정
+            if (detailGridView.Columns["클러스터명"] != null)
+            {
+                detailGridView.Columns["클러스터명"].ReadOnly = true;
+                detailGridView.Columns["클러스터명"].Width = 400;
+                detailGridView.Columns["클러스터명"].AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+            }
+
+            // 타겟 컬럼 너비 고정
+            if (DataHandler.levelName.Count > 0)
+            {
+                string lastLevelName = DataHandler.levelName[DataHandler.levelName.Count - 1];
+                if (detailGridView.Columns[lastLevelName] != null)
+                {
+                    detailGridView.Columns[lastLevelName].Width = 400;
+                    detailGridView.Columns[lastLevelName].AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+                }
+            }
+
+            // 나머지 컬럼은 자동 크기 조정
+            for (int i = 1; i < detailGridView.Columns.Count; i++)
+            {
+                string colName = detailGridView.Columns[i].Name;
+                if (colName != "클러스터명" &&
+                    colName != DataHandler.prod_col_name &&
+                    (DataHandler.levelName.Count == 0 || colName != DataHandler.levelName[DataHandler.levelName.Count - 1]))
+                {
+                    detailGridView.Columns[i].AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+                }
+            }
+
+            // 13. SortCompare 이벤트 핸들러 추가
+            detailGridView.SortCompare -= DataHandler.money_SortCompare;
+            detailGridView.SortCompare += DataHandler.money_SortCompare;
+
+            // 14. 컬럼 순서 재배치 - CreateFilteredDataGridView와 동일하게
+            List<string> desiredOrder = new List<string>
+                {                  
+                    "Count",
+                    DataHandler.sub_acc_col_name,
+                    DataHandler.levelName[DataHandler.levelName.Count - 1],
+                    DataHandler.prod_col_name,
+                    DataHandler.dept_col_name,
+                    "합산금액"
+                };
+
+            // 기존 컬럼 위치 저장
+            Dictionary<string, int> originalIndices = new Dictionary<string, int>();
+            for (int i = 0; i < detailGridView.Columns.Count; i++)
+            {
+                originalIndices[detailGridView.Columns[i].Name] = i;
+            }
+
+            // 새로운 컬럼 순서 설정
+            for (int i = 0; i < desiredOrder.Count; i++)
+            {
+                string colName = desiredOrder[i];
+                if (detailGridView.Columns.Contains(colName))
+                {
+                    detailGridView.Columns[colName].DisplayIndex = i;
+                }
+            }
+
+            // 나머지 컬럼들은 순서 유지하되 우선 순위가 낮은 컬럼으로 배치
+            var remainingColumns = detailGridView.Columns.Cast<DataGridViewColumn>()
+                .Where(col => !desiredOrder.Contains(col.Name))
+                .OrderBy(col => originalIndices[col.Name])
+                .ToList();
+
+            int nextIndex = desiredOrder.Count;
+            foreach (var col in remainingColumns)
+            {
+                // DisplayIndex가 열 개수보다 작은지 확인
+                if (nextIndex < detailGridView.Columns.Count)
+                {
+                    col.DisplayIndex = nextIndex++;
+                }
+                else
+                {
+                    // 최대 허용 인덱스로 설정
+                    col.DisplayIndex = detailGridView.Columns.Count - 1;
+                }
+            }
+
+            // 15. 팝업 폼에 DataGridView 추가 및 표시
+            popupForm.Controls.Add(detailGridView);
+            popupForm.ShowDialog();
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            ShowMergeClusterDetail();
+
         }
     }
 }
